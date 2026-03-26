@@ -250,6 +250,10 @@ def setup_ssh_key(user, home, key_owner="root"):
         key_dir = ask("Directorio para guardar las claves", default=default_dir)
         Path(key_dir).mkdir(parents=True, exist_ok=True)
         key_path = f"{key_dir}/{user}_key"
+        if Path(key_path).exists():
+            warn(f"La clave '{key_path}' ya existe — se sobreescribirá.")
+            Path(key_path).unlink()
+            Path(f"{key_path}.pub").unlink(missing_ok=True)
         run(f'ssh-keygen -t ed25519 -f "{key_path}" -N "" -C "{user}@agent"')
         pub_key = Path(f"{key_path}.pub").read_text().strip()
         run(f"chown -R {key_owner}:{key_owner} {key_dir}")
@@ -329,12 +333,12 @@ def main():
     # 3/5 Usuario restringido
     section(3, 5, "USUARIO RESTRINGIDO")
     user = ask("Nombre de usuario restringido", default="claude")
+    home = f"/home/{user}"
     if run(f"id {user}", check=False).returncode == 0:
-        warn(f"El usuario '{user}' ya existe. Se actualizará SSH y sudoers.")
-        home = f"/home/{user}"
+        warn(f"⚠️  El usuario '{user}' ya existe.")
+        warn(f"   Se configurará SSH y sudoers en su home existente: {home}")
     else:
         run(f"useradd -m -s /bin/bash {user}")
-        home = f"/home/{user}"
         ok(f"Usuario '{user}' creado con home {home}")
 
     # 4/5 Usuario admin
@@ -343,7 +347,10 @@ def main():
     info("  → sudo total sin restricciones, completamente distinto del usuario restringido")
     admin = ask("Nombre de usuario admin [ENTER para omitir]", default="").strip()
     if admin:
-        if run(f"id {admin}", check=False).returncode != 0:
+        if run(f"id {admin}", check=False).returncode == 0:
+            warn(f"⚠️  El usuario admin '{admin}' ya existe.")
+            warn(f"   Se configurará SSH y sudoers en su home existente: /home/{admin}")
+        else:
             run(f"useradd -m -s /bin/bash {admin}")
             ok(f"Usuario admin '{admin}' creado.")
 
