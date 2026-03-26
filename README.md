@@ -1,24 +1,24 @@
 # claude-agent-infra
 
-Toolkit para desplegar un usuario restringido compatible con Claude Code en entornos servidor Linux, Proxmox VE y Docker.
+Toolkit to deploy a restricted user compatible with Claude Code on Linux servers, Proxmox VE, and Docker hosts.
 
-Incluye el script de instalación, un `CLAUDE.md` genérico y una skill técnica lista para usar con Claude Code.
+Includes the setup script, a generic `CLAUDE.md`, and a technical skill ready to use with Claude Code.
 
 ---
 
-## ¿Qué incluye?
+## What's included
 
-| Fichero | Descripción |
+| File | Description |
 |---|---|
-| `setup.py` | Script interactivo Python que crea el usuario, configura SSH y genera la whitelist sudoers |
-| `CLAUDE.md` | Configuración genérica para Claude Code: modos, zonas rojas, idioma, perfiles |
-| `proxmox_linux_skill.md` | Skill técnica: cómo Claude trabaja con Linux genérico y Proxmox de forma segura |
+| `setup.py` | Guided interactive script — step by step, no Linux expertise required. It detects the environment automatically and handles user creation, SSH key setup, and permission configuration. When it finishes, Claude Code is ready to connect to the server. |
+| `CLAUDE.md` | Generic Claude Code configuration: modes, red zones, language, profiles |
+| `skills/proxmox_linux_skill.md` | Technical skill: how Claude works safely with generic Linux and Proxmox |
 
 ---
 
-## Compatibilidad
+## Compatibility
 
-| Entorno | Estado |
+| Environment | Status |
 |---|---|
 | Proxmox VE 8+ | ✅ |
 | Debian 12+ | ✅ |
@@ -28,108 +28,88 @@ Incluye el script de instalación, un `CLAUDE.md` genérico y una skill técnica
 
 ---
 
-## Requisitos previos
+## Prerequisites
 
-- Python 3 instalado en el servidor
-- Acceso root al servidor
-- `visudo` disponible (`sudo` instalado)
-- Cliente SSH configurado en tu máquina (Windows/Mac/Linux)
+- Root access to the server
+- Python 3 installed on the server
+- SSH client configured on your machine (Windows / Mac / Linux)
+
+> Missing tools (`sudo`, `ssh-keygen`) are detected and installed automatically with your confirmation.
 
 ---
 
-## Instalación
+## Installation
 
-### 1. Clona el repo en el servidor
+### 1. Download the script on the server
 
 ```bash
-git clone https://github.com/<tu-usuario>/claude-agent-infra.git
-cd claude-agent-infra
+curl -O https://raw.githubusercontent.com/CTRQuko/claude-agent-infra/main/setup.py
 ```
 
-### 2. Ejecuta el script como root
+### 2. Run it as root
 
 ```bash
 sudo python3 setup.py
 ```
 
-El script preguntará de forma interactiva:
+The script guides you through **5 steps**:
 
-```
-Entorno detectado: Proxmox VE
-¿Confirmar entorno? [1-3]: 1
+![Setup steps 1–4](docs/screenshots/setup-steps-1-4.png)
 
-Nombre de usuario restringido [claude]:
-Usuario admin con sudo total (ENTER para omitir):
+![Setup step 5 — SSH keys and sudoers](docs/screenshots/setup-step-5.png)
 
-¿Generar nueva clave o añadir existente?
-  1. Generar nueva clave ed25519
-  2. Añadir clave pública existente
-```
+> **Language note:** the script runs in Spanish by default.
+> Change `IDIOMA_ACTIVO = EN` in `CLAUDE.md` to switch to English.
 
-### 3. Copia la clave privada a tu máquina
+### 3. Copy the private key to your machine
 
 ```bash
-# Desde tu máquina Windows/Mac
-scp root@<IP_SERVIDOR>:/root/claude_keys/claude_key ~/.ssh/claude_key
+# From your Windows/Mac machine
+scp root@<SERVER_IP>:/root/claude_keys/claude_key ~/.ssh/claude_key
 ```
 
-### 4. Prueba la conexión
+### 4. Test the connection
 
 ```bash
-ssh claude@<IP_SERVIDOR>
+ssh claude@<SERVER_IP>
 ```
 
 ---
 
-## Configuración Claude Code
+## Claude Code setup
 
-### Coloca los ficheros en tu máquina
+### Place the files on your machine
 
 ```
-~/.claude/CLAUDE.md                        ← copia o adapta el CLAUDE.md del repo
+~/.claude/CLAUDE.md                        ← copy or adapt the CLAUDE.md from this repo
 ~/.claude/skills/proxmox-linux/
-    └── proxmox_linux_skill.md             ← copia la skill del repo
+    └── proxmox_linux_skill.md             ← copy the skill from this repo
 ```
 
-### Configura el alias SSH (opcional pero recomendado)
+### Configure the SSH alias (optional but recommended)
 
 ```
 # ~/.ssh/config
-Host mi-servidor
-    HostName <IP_SERVIDOR>
+Host my-server
+    HostName <SERVER_IP>
     User claude
     IdentityFile ~/.ssh/claude_key
 ```
 
 ---
 
-## Modos disponibles en Claude Code
+## Available modes in Claude Code
 
-El CLAUDE.md incluido soporta español (`IDIOMA_ACTIVO = ES`) e inglés (`IDIOMA_ACTIVO = EN`). Los banners de modo se muestran en el idioma configurado.
-
-| Modo | Modelo default | Cuándo usarlo |
+| Mode | Default model | When to use |
 |---|---|---|
-| `plan` | Haiku | Diseñar, analizar, proponer — Claude no ejecuta nada |
-| `interactivo` | Sonnet | Primera vez / riesgo / troubleshooting — confirma por bloque |
-| `auto` | Sonnet | Rutinas conocidas / solo lectura — ejecuta sin pausas |
-| `super` | Opus | Sin restricciones — triple verificación obligatoria |
+| `plan` | Haiku | Design, analyze, propose — Claude executes nothing |
+| `interactivo` | Sonnet | First time / risk / troubleshooting — confirms block by block |
+| `auto` | Sonnet | Known routines / read-only — executes without pauses |
+| `super` | Opus | No restrictions — explicit 3-step activation required |
 
-### Override de modelo
+### Language
 
-Por defecto Claude usa el modelo asignado a cada modo. Si quieres usar otro modelo, indícalo después del modo:
-
-```
-modo plan              → Haiku (default)
-modo plan sonnet       → fuerza Sonnet en modo PLAN
-modo auto haiku        → fuerza Haiku en modo AUTO
-modo interactivo opus  → fuerza Opus en modo INTERACTIVO
-```
-
-> `super` no admite override — siempre usa Opus.
-
-### Idioma
-
-Cambia `IDIOMA_ACTIVO` en el `CLAUDE.md` para alternar entre español e inglés:
+Change `IDIOMA_ACTIVO` in `CLAUDE.md` to switch between Spanish and English:
 
 ```
 IDIOMA_ACTIVO = ES   ← español (default)
@@ -138,18 +118,18 @@ IDIOMA_ACTIVO = EN   ← english
 
 ---
 
-## Zonas rojas
+## Red zones
 
-Claude **nunca ejecutará** sin confirmación explícita:
+Claude will **never execute** without explicit confirmation:
 
 - `pct destroy` / `qm destroy` / `zfs destroy`
-- `rm -rf` en rutas críticas
-- Edición directa de `/etc/sudoers`
-- Creación/borrado de usuarios sin revisión
-- Cambios de red o firewall que puedan cortar acceso SSH
+- `rm -rf` on critical paths
+- Direct edits to `/etc/sudoers`
+- User creation or deletion without review
+- Network or firewall changes that could cut SSH access
 
 ---
 
-## Licencia
+## License
 
-MIT — úsalo, adáptalo, compártelo.
+MIT — use it, adapt it, share it.
