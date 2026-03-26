@@ -343,13 +343,21 @@ def main():
 
     # 4/5 Usuario admin
     section(4, 5, "USUARIO ADMINISTRADOR  (opcional)")
-    info("Usuario administrador humano (el 'dueño' del servidor, ej: admin, devops)")
-    info("  → sudo total sin restricciones, completamente distinto del usuario restringido")
+    info("Usuario administrador con sudo total")
+    info("  → Introduce un usuario existente (se añadirá sudo + SSH)")
+    info("  → O un nombre nuevo (se creará con sudo total)")
     admin = ask("Nombre de usuario admin [ENTER para omitir]", default="").strip()
+    admin_has_key = False
     if admin:
         if run(f"id {admin}", check=False).returncode == 0:
-            warn(f"⚠️  El usuario admin '{admin}' ya existe.")
-            warn(f"   Se configurará SSH y sudoers en su home existente: /home/{admin}")
+            warn(f"⚠️  El usuario '{admin}' ya existe.")
+            warn(f"   Se configurará sudo en su home existente: /home/{admin}")
+            # Comprobar si ya tiene authorized_keys
+            auth_keys_path = Path(f"/home/{admin}/.ssh/authorized_keys")
+            if auth_keys_path.exists() and auth_keys_path.stat().st_size > 0:
+                info(f"  → '{admin}' ya tiene clave SSH configurada.")
+                warn(f"   Recuerda usar esa clave para conectarte como '{admin}'.")
+                admin_has_key = True
         else:
             run(f"useradd -m -s /bin/bash {admin}")
             ok(f"Usuario admin '{admin}' creado.")
@@ -357,7 +365,7 @@ def main():
     # 5/5 Claves SSH + sudoers
     section(5, 5, "CLAVES SSH")
     setup_ssh_key(user, home, key_owner="root")
-    if admin:
+    if admin and not admin_has_key:
         setup_ssh_key(admin, f"/home/{admin}", key_owner=admin)
 
     print()
