@@ -73,7 +73,9 @@ Criterios resumidos:
   - Operaciones de solo lectura o pequeños cambios controlados.
   - Scripts y comandos que el usuario ha validado antes.
   - **El banner es informativo — Claude ejecuta directamente sin pedir confirmación.**
+  - Git push, escritura de ficheros, comandos → sin pedir permiso.
   - Única excepción: error inesperado → para y consulta.
+  - Al completar tarea → vuelve automáticamente a PLAN mostrando su banner.
 
 - SUPER:
   - Modelo: Opus — sin override posible.
