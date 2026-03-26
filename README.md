@@ -149,6 +149,27 @@ IDIOMA_ACTIVO = EN   ← Claude responds in English
 
 ---
 
+## AUTO mode and permissions
+
+In AUTO mode Claude executes commands without asking for confirmation — but Claude Code may still prompt for approval depending on your `settings.json` permissions.
+
+If you want fully unattended AUTO mode (no approval prompts for `git`, `bash`, file writes), add the relevant permissions to your `~/.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(ssh *)"
+    ]
+  }
+}
+```
+
+> This is a Claude Code setting, not a script setting. Adjust to your own comfort level.
+
+---
+
 ## Red zones
 
 Claude will **never execute** without explicit confirmation:
