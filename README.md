@@ -52,14 +52,17 @@ curl -O https://raw.githubusercontent.com/CTRQuko/claude-agent-infra/main/setup.
 sudo python3 setup.py
 ```
 
-The script guides you through **5 steps**:
+The script starts by asking your preferred language, then guides you through **5 steps**:
+
+```
+  1. Español
+  2. English
+Selecciona idioma / Select language [1-2]:
+```
 
 ![Setup steps 1–4](docs/screenshots/setup-steps-1-4.png)
 
 ![Setup step 5 — SSH keys and sudoers](docs/screenshots/setup-step-5.png)
-
-> **Language note:** the script runs in Spanish by default.
-> Change `IDIOMA_ACTIVO = EN` in `CLAUDE.md` to switch to English.
 
 ### 3. Copy the private key to your machine
 
@@ -107,14 +110,16 @@ Host my-server
 | `auto` | Sonnet | Known routines / read-only — executes without pauses |
 | `super` | Opus | No restrictions — explicit 3-step activation required |
 
-### Language
+### Claude Code language
 
-Change `IDIOMA_ACTIVO` in `CLAUDE.md` to switch between Spanish and English:
+`IDIOMA_ACTIVO` in `CLAUDE.md` controls the language of **Claude's responses** — not the setup script.
 
 ```
-IDIOMA_ACTIVO = ES   ← español (default)
-IDIOMA_ACTIVO = EN   ← english
+IDIOMA_ACTIVO = ES   ← Claude responds in Spanish (default)
+IDIOMA_ACTIVO = EN   ← Claude responds in English
 ```
+
+> The setup script has its own language selector at startup (see Installation above).
 
 ---
 
