@@ -105,6 +105,8 @@ Host mi-servidor
 
 ## Modos disponibles en Claude Code
 
+El CLAUDE.md incluido soporta español (`IDIOMA_ACTIVO = ES`) e inglés (`IDIOMA_ACTIVO = EN`). Los banners de modo se muestran en el idioma configurado.
+
 | Modo | Modelo default | Cuándo usarlo |
 |---|---|---|
 | `plan` | Haiku | Diseñar, analizar, proponer — Claude no ejecuta nada |
@@ -124,6 +126,15 @@ modo interactivo opus  → fuerza Opus en modo INTERACTIVO
 ```
 
 > `super` no admite override — siempre usa Opus.
+
+### Idioma
+
+Cambia `IDIOMA_ACTIVO` en el `CLAUDE.md` para alternar entre español e inglés:
+
+```
+IDIOMA_ACTIVO = ES   ← español (default)
+IDIOMA_ACTIVO = EN   ← english
+```
 
 ---
 
