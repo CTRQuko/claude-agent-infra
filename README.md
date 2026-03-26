@@ -64,17 +64,43 @@ Selecciona idioma / Select language [1-2]:
 
 ![Setup step 5 — SSH keys and sudoers](docs/screenshots/setup-step-5.png)
 
-### 3. Copy the private key to your machine
+### 3. Copy the private key and configure SSH
+
+**Windows**
+
+```powershell
+scp root@<SERVER_IP>:/root/claude_keys/claude_key C:\Users\%USERNAME%\.ssh\claude_key
+```
+
+Add to `C:\Users\%USERNAME%\.ssh\config` (create it if it doesn't exist):
+
+```
+Host my-server
+    HostName <SERVER_IP>
+    User claude
+    IdentityFile C:\Users\%USERNAME%\.ssh\claude_key
+```
+
+**Linux / Mac**
 
 ```bash
-# From your Windows/Mac machine
 scp root@<SERVER_IP>:/root/claude_keys/claude_key ~/.ssh/claude_key
+chmod 600 ~/.ssh/claude_key
+```
+
+Add to `~/.ssh/config` (create it if it doesn't exist):
+
+```
+Host my-server
+    HostName <SERVER_IP>
+    User claude
+    IdentityFile ~/.ssh/claude_key
 ```
 
 ### 4. Test the connection
 
 ```bash
-ssh claude@<SERVER_IP>
+ssh my-server
 ```
 
 ---
