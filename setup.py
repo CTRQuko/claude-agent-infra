@@ -78,10 +78,12 @@ def check_and_install_deps():
 
     print()
     info("Verificando herramientas mínimas necesarias:")
+    print()
     for binary, pkg, desc in REQUIRED_TOOLS:
         found = shutil.which(binary) is not None
-        status = f"{GREEN}✅{RESET}" if found else f"{RED}❌{RESET}"
+        status = f"{GREEN}✅ {RESET}" if found else f"{RED}❌ {RESET}"
         print(f"  {status} {binary:15s} — {desc}")
+    print()
 
     if not missing:
         ok("Todas las herramientas están disponibles.")
@@ -90,7 +92,7 @@ def check_and_install_deps():
     print()
     warn("Faltan las siguientes herramientas:")
     for binary, pkg, desc in missing:
-        print(f"  ❌ {binary} ({pkg}) — {desc}")
+        print(f"  ❌  {binary} ({pkg}) — {desc}")
     print()
     confirm = input("¿Instalar automáticamente con apt? [s/N]: ").strip().lower()
     if confirm not in ("s", "si", "sí", "y", "yes"):
@@ -288,18 +290,31 @@ def setup_ssh_key(user, home, key_owner="root"):
 
 # ─── MAIN ─────────────────────────────────────────────────────────────────────
 
+SEP  = "=" * 60
+DASH = "-" * 60
+
+def section(n, total, title):
+    print()
+    print(SEP)
+    print(f"  [ {n}/{total} ] {title}")
+    print(DASH)
+
 def main():
     print()
-    print("=" * 60)
+    print(SEP)
     print("  claude-agent-infra — Setup usuario restringido")
     print("  Compatible: Proxmox VE / Debian / Ubuntu / Docker")
-    print("=" * 60)
+    print(SEP)
     print()
 
     check_root()
+
+    # 1/5 Verificación entorno
+    section(1, 5, "VERIFICACIÓN DEL ENTORNO")
     check_and_install_deps()
 
-    # Detectar entorno
+    # 2/5 Entorno
+    section(2, 5, "ENTORNO DE DESTINO")
     detected = detect_os()
     env_names = {"proxmox": "Proxmox VE", "docker": "Docker host", "debian": "Debian/Ubuntu base"}
     info(f"Entorno detectado: {env_names[detected]}")
@@ -311,8 +326,8 @@ def main():
     env_map = {"Proxmox VE": "proxmox", "Debian/Ubuntu base": "debian", "Docker host": "docker"}
     env = env_map[env_choice]
 
-    # Usuario restringido
-    print()
+    # 3/5 Usuario restringido
+    section(3, 5, "USUARIO RESTRINGIDO")
     user = ask("Nombre de usuario restringido", default="claude")
     if run(f"id {user}", check=False).returncode == 0:
         warn(f"El usuario '{user}' ya existe. Se actualizará SSH y sudoers.")
@@ -322,8 +337,8 @@ def main():
         home = f"/home/{user}"
         ok(f"Usuario '{user}' creado con home {home}")
 
-    # Usuario admin opcional
-    print()
+    # 4/5 Usuario admin
+    section(4, 5, "USUARIO ADMINISTRADOR  (opcional)")
     info("Usuario administrador humano (el 'dueño' del servidor, ej: admin, devops)")
     info("  → sudo total sin restricciones, completamente distinto del usuario restringido")
     admin = ask("Nombre de usuario admin [ENTER para omitir]", default="").strip()
@@ -332,18 +347,17 @@ def main():
             run(f"useradd -m -s /bin/bash {admin}")
             ok(f"Usuario admin '{admin}' creado.")
 
-    # SSH
+    # 5/5 Claves SSH + sudoers
+    section(5, 5, "CLAVES SSH")
     setup_ssh_key(user, home, key_owner="root")
     if admin:
         setup_ssh_key(admin, f"/home/{admin}", key_owner=admin)
 
-    # Sudoers usuario restringido
     print()
+    print(DASH)
     info("Generando y validando sudoers...")
     sudoers_content = build_sudoers(user, env)
     apply_sudoers(user, sudoers_content)
-
-    # Sudoers admin
     if admin:
         admin_sudoers = f"# {admin} — root total\n{admin} ALL=(ALL) NOPASSWD: ALL\n"
         apply_sudoers(admin, admin_sudoers)
@@ -351,9 +365,9 @@ def main():
 
     # Verificación final
     print()
-    print("=" * 60)
+    print(SEP)
     print("  VERIFICACIÓN FINAL")
-    print("=" * 60)
+    print(DASH)
     print()
     info(f"Usuario {user}:")
     run(f"id {user}", check=False)
@@ -363,15 +377,16 @@ def main():
     run(f"head -5 /etc/sudoers.d/{user}", check=False)
 
     print()
-    print("=" * 60)
+    print(SEP)
     ok("INSTALACIÓN COMPLETA")
-    print("=" * 60)
+    print(DASH)
     print()
     info(f"Prueba conexión desde tu máquina:")
     print(f"    ssh {user}@<IP_NODO>")
     print()
-    warn("Recuerda copiar la clave privada a tu máquina Windows antes de borrar /root/claude_keys/")
+    warn("Recuerda copiar la clave privada a tu máquina antes de borrar el directorio de claves.")
     print()
+    print(SEP)
 
 if __name__ == "__main__":
     try:
