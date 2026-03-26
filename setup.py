@@ -319,7 +319,7 @@ def main():
 
     # Usuario admin opcional
     print()
-    info("Usuario administrador humano (el 'dueño' del servidor, ej: jandro, admin)")
+    info("Usuario administrador humano (el 'dueño' del servidor, ej: admin, devops)")
     info("  → sudo total sin restricciones, completamente distinto del usuario restringido")
     admin = ask("Nombre de usuario admin [ENTER para omitir]", default="").strip()
     if admin:
