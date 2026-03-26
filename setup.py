@@ -57,11 +57,50 @@ def ask_choice(prompt, options):
             pass
         warn("Opción no válida, intenta de nuevo.")
 
+REQUIRED_TOOLS = [
+    ("sudo",    "sudo",   "paquete sudo (visudo, sudoers)"),
+    ("useradd", "passwd", "gestión de usuarios"),
+    ("ssh-keygen", "openssh-client", "generación de claves SSH"),
+]
+
 def check_root():
     if os.geteuid() != 0:
         err("Este script debe ejecutarse como root.")
         err("Usa: sudo python3 setup.py")
         sys.exit(1)
+
+def check_and_install_deps():
+    """Verifica herramientas mínimas e instala las que falten."""
+    missing = []
+    for binary, pkg, desc in REQUIRED_TOOLS:
+        if not shutil.which(binary):
+            missing.append((binary, pkg, desc))
+
+    print()
+    info("Verificando herramientas mínimas necesarias:")
+    for binary, pkg, desc in REQUIRED_TOOLS:
+        found = shutil.which(binary) is not None
+        status = f"{GREEN}✅{RESET}" if found else f"{RED}❌{RESET}"
+        print(f"  {status} {binary:15s} — {desc}")
+
+    if not missing:
+        ok("Todas las herramientas están disponibles.")
+        return
+
+    print()
+    warn("Faltan las siguientes herramientas:")
+    for binary, pkg, desc in missing:
+        print(f"  ❌ {binary} ({pkg}) — {desc}")
+    print()
+    confirm = input("¿Instalar automáticamente con apt? [s/N]: ").strip().lower()
+    if confirm not in ("s", "si", "sí", "y", "yes"):
+        err("Instalación cancelada. Instala las herramientas manualmente y vuelve a ejecutar el script.")
+        sys.exit(1)
+
+    run("apt-get update -qq")
+    pkgs = " ".join(pkg for _, pkg, _ in missing)
+    run(f"apt-get install -y {pkgs}")
+    ok("Herramientas instaladas correctamente.")
 
 def detect_os():
     """Detecta si es Proxmox, Docker host o Debian/Ubuntu base."""
@@ -206,22 +245,33 @@ def setup_ssh_key(user, home):
         key_path = f"{key_dir}/{user}_key"
         run(f'ssh-keygen -t ed25519 -f "{key_path}" -N "" -C "{user}@agent"')
         pub_key = Path(f"{key_path}.pub").read_text().strip()
+        run(f"chown -R root:root {key_dir}")
+        run(f"chmod 700 {key_dir}")
+        run(f"chmod 600 {key_path}")
+        run(f"chmod 644 {key_path}.pub")
         ok(f"Clave privada: {key_path}")
         ok(f"Clave pública: {key_path}.pub")
         warn(f"Copia la clave privada a tu máquina Windows: {key_path}")
     else:
         print("  Opciones: ruta al fichero .pub o pegar la clave directamente")
-        entrada = ask("Ruta al fichero .pub o clave pública").strip()
-        if Path(entrada).exists():
-            pub_key = Path(entrada).read_text().strip()
-        else:
-            pub_key = entrada
-
-        # Validar formato
-        if not pub_key.startswith(("ssh-ed25519", "ssh-rsa", "ecdsa-sha2")):
-            err("Formato de clave pública no válido.")
-            sys.exit(1)
-        ok("Clave pública validada.")
+        while True:
+            entrada = input("Ruta al fichero .pub o clave pública: ").strip()
+            if not entrada:
+                warn("No introdujiste nada. Introduce una ruta a fichero .pub o pega la clave directamente.")
+                continue
+            p = Path(entrada)
+            if p.exists() and p.is_dir():
+                warn(f"'{entrada}' es un directorio, no un fichero. Introduce la ruta completa al fichero .pub.")
+                continue
+            if p.exists() and p.is_file():
+                pub_key = p.read_text().strip()
+            else:
+                pub_key = entrada
+            if not pub_key.startswith(("ssh-ed25519", "ssh-rsa", "ecdsa-sha2")):
+                warn("Formato de clave pública no válido. Debe empezar por ssh-ed25519, ssh-rsa o ecdsa-sha2.")
+                continue
+            ok("Clave pública validada.")
+            break
 
     # Instalar clave
     ssh_dir.mkdir(mode=0o700, exist_ok=True)
@@ -242,6 +292,7 @@ def main():
     print()
 
     check_root()
+    check_and_install_deps()
 
     # Detectar entorno
     detected = detect_os()
@@ -268,7 +319,9 @@ def main():
 
     # Usuario admin opcional
     print()
-    admin = ask("Usuario admin con sudo total (ENTER para omitir)", default="").strip()
+    info("Usuario administrador humano (el 'dueño' del servidor, ej: jandro, admin)")
+    info("  → sudo total sin restricciones, completamente distinto del usuario restringido")
+    admin = ask("Nombre de usuario admin [ENTER para omitir]", default="").strip()
     if admin:
         if run(f"id {admin}", check=False).returncode != 0:
             run(f"useradd -m -s /bin/bash {admin}")
