@@ -226,32 +226,37 @@ def apply_sudoers(user, content):
 
 # ─── SSH ──────────────────────────────────────────────────────────────────────
 
-def setup_ssh_key(user, home):
-    """Gestiona clave SSH: generar o añadir existente."""
+def setup_ssh_key(user, home, key_owner="root"):
+    """Gestiona clave SSH: generar o añadir existente.
+    key_owner: usuario que custodia la clave privada generada (root para usuario restringido, el propio admin para admin).
+    """
     ssh_dir = Path(home) / ".ssh"
     auth_keys = ssh_dir / "authorized_keys"
 
     print()
-    info("Configuración de clave SSH:")
+    info(f"Configurando clave SSH para usuario '{user}':")
     action = ask_choice("¿Generar nueva clave o añadir existente?", [
         "Generar nueva clave ed25519",
         "Añadir clave pública existente"
     ])
 
     if action.startswith("Generar"):
-        default_dir = "/root/claude_keys"
+        if key_owner == "root":
+            default_dir = "/root/claude_keys"
+        else:
+            default_dir = f"/home/{key_owner}/keys"
         key_dir = ask("Directorio para guardar las claves", default=default_dir)
         Path(key_dir).mkdir(parents=True, exist_ok=True)
         key_path = f"{key_dir}/{user}_key"
         run(f'ssh-keygen -t ed25519 -f "{key_path}" -N "" -C "{user}@agent"')
         pub_key = Path(f"{key_path}.pub").read_text().strip()
-        run(f"chown -R root:root {key_dir}")
+        run(f"chown -R {key_owner}:{key_owner} {key_dir}")
         run(f"chmod 700 {key_dir}")
         run(f"chmod 600 {key_path}")
         run(f"chmod 644 {key_path}.pub")
         ok(f"Clave privada: {key_path}")
         ok(f"Clave pública: {key_path}.pub")
-        warn(f"Copia la clave privada a tu máquina Windows: {key_path}")
+        warn(f"Copia la clave privada a tu máquina: {key_path}")
     else:
         print("  Opciones: ruta al fichero .pub o pegar la clave directamente")
         while True:
@@ -328,11 +333,9 @@ def main():
             ok(f"Usuario admin '{admin}' creado.")
 
     # SSH
-    setup_ssh_key(user, home)
+    setup_ssh_key(user, home, key_owner="root")
     if admin:
-        print()
-        info(f"Configurando SSH para usuario admin '{admin}':")
-        setup_ssh_key(admin, f"/home/{admin}")
+        setup_ssh_key(admin, f"/home/{admin}", key_owner=admin)
 
     # Sudoers usuario restringido
     print()
@@ -371,4 +374,8 @@ def main():
     print()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nInstalación cancelada.")
+        sys.exit(0)
