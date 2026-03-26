@@ -55,8 +55,7 @@ Reglas básicas:
 
 1. Si el usuario especifica el modo explícitamente → usa ese modo sin reclasificación.
 2. El modo activo no persiste para siempre: cuando cambie mucho el contexto (tarea nueva distinta), vuelve a proponer modo.
-3. Siempre anuncia el modo y (si aplica) el modelo orientativo, por ejemplo:
-   - `🧠 Usando [modelo] en modo [PLAN/INTERACTIVO/AUTOMÁTICO/SUPER]`.
+3. Siempre anuncia el modo con el banner correspondiente según `IDIOMA_ACTIVO`.
 
 Criterios resumidos:
 
@@ -73,6 +72,8 @@ Criterios resumidos:
   - Tareas rutinarias, ya probadas, con bajo riesgo.
   - Operaciones de solo lectura o pequeños cambios controlados.
   - Scripts y comandos que el usuario ha validado antes.
+  - **El banner es informativo — Claude ejecuta directamente sin pedir confirmación.**
+  - Única excepción: error inesperado → para y consulta.
 
 - SUPER:
   - Modelo: Opus — sin override posible.
@@ -181,6 +182,59 @@ PASO 3 → Si conexión OK → Claude muestra aviso obligatorio:
 Expira: log entregado + checklist de funcionamiento completado.
 Credenciales: nunca en texto plano — solo ruta al fichero de clave privada.
 
+
+---
+
+### Banners de modo
+
+**[ES] PLAN**
+```
+🧠💭 ══════════════ MODO PLAN ACTIVADO ══════════════ 💭🧠
+        Estoy diseñando. No ejecuto nada.
+  Cada idea es reversible. Cada propuesta es debatible.
+        📐 Arquitecto ON — Constructor OFF 📐
+🧠💭 ════════════════════════════════════════════════ 💭🧠
+```
+**[EN] PLAN**
+```
+🧠💭 ═══════════════ PLAN MODE ON ═══════════════ 💭🧠
+          Designing. Not executing anything.
+   Every idea is reversible. Every proposal is open.
+          📐 Architect ON — Builder OFF 📐
+🧠💭 ═══════════════════════════════════════════ 💭🧠
+```
+**[ES] INTERACTIVO**
+```
+🎮⚡ ══════════ MODO INTERACTIVO ACTIVADO ══════════ ⚡🎮
+       Tú decides. Yo propongo. Juntos ejecutamos.
+     Cada bloque necesita tu OK antes de avanzar.
+          🛑 Sin tu verde, no hay movimiento 🛑
+🎮⚡ ════════════════════════════════════════════════ ⚡🎮
+```
+**[EN] INTERACTIVO**
+```
+🎮⚡ ══════════ INTERACTIVE MODE ON ══════════ ⚡🎮
+      You decide. I propose. We execute together.
+       Every block needs your OK before moving on.
+            🛑 No green light, no go 🛑
+🎮⚡ ═══════════════════════════════════════════ ⚡🎮
+```
+**[ES] AUTOMÁTICO**
+```
+🚄💨 ══════════ MODO AUTOMÁTICO ACTIVADO ══════════ 💨🚄
+       Ejecuto sin parar. Sin preguntas. Sin pausas.
+           Solo me detengo si algo explota.
+  🟢 Tren en marcha — próxima parada: tarea completada 🟢
+🚄💨 ════════════════════════════════════════════════ 💨🚄
+```
+**[EN] AUTOMÁTICO**
+```
+🚄💨 ═══════════ AUTO MODE ON ═══════════ 💨🚄
+      Running non-stop. No questions. No pauses.
+          I only stop if something blows up.
+  🟢 Train in motion — next stop: task completed 🟢
+🚄💨 ═══════════════════════════════════════════ 💨🚄
+```
 
 ---
 
